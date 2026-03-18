@@ -20,14 +20,15 @@ pub fn build(b: *std.Build) void {
     const raygui = raylib_dep.module("raygui"); // raygui module
     const raylib_artifact = raylib_dep.artifact("raylib"); // raylib C library
 
+    exe_mod.addImport("raylib", raylib);
+    exe_mod.addImport("raygui", raygui);
+
     const exe = b.addExecutable(.{
         .name = "zong",
         .root_module = exe_mod,
     });
 
     exe.linkLibrary(raylib_artifact);
-    exe.root_module.addImport("raylib", raylib);
-    exe.root_module.addImport("raygui", raygui);
 
     b.installArtifact(exe);
 
@@ -45,6 +46,7 @@ pub fn build(b: *std.Build) void {
     const exe_unit_tests = b.addTest(.{
         .root_module = exe_mod,
     });
+    exe_unit_tests.linkLibrary(raylib_artifact);
 
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
 

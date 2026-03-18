@@ -17,6 +17,10 @@ const paddleHeight: f32 = 50.0;
 const ballRadius: f32 = 10.0;
 const ballSpeed: f32 = 5.0;
 const paddleSpeed: f32 = 6.0;
+const scoreTextY: i32 = 20;
+const scoreFontSize: i32 = 40;
+const player1ScoreX: i32 = @as(i32, @intFromFloat(cx)) - 50;
+const player2ScoreX: i32 = @as(i32, @intFromFloat(cx)) + 30;
 
 const Player = struct {
     pos: Vector2,
@@ -28,12 +32,6 @@ const State = struct {
     ballVelocity: Vector2,
     player1: Player,
     player2: Player,
-    is_over: bool,
-};
-
-const CenterLine = struct {
-    segment_start: Vector2,
-    segment_end: Vector2,
 };
 
 var game_state: State = .{
@@ -41,25 +39,20 @@ var game_state: State = .{
     .ballVelocity = .{ .x = -ballSpeed, .y = ballSpeed },
     .player1 = Player{ .pos = .{ .x = 10.0, .y = cy - paddleHeight / 2.0 }, .score = 0 },
     .player2 = Player{ .pos = .{ .x = screenWidth - 20.0, .y = cy - paddleHeight / 2.0 }, .score = 0 },
-    .is_over = false,
-};
-
-var center_line: CenterLine = .{
-    .segment_start = .{ .x = cx, .y = 0.0 },
-    .segment_end = .{ .x = cx, .y = dashLength },
 };
 
 fn drawCenterline() void {
-    center_line.segment_start = .{ .x = cx, .y = 0.0 };
-    center_line.segment_end = .{ .x = cx, .y = dashLength };
-    while (center_line.segment_start.y < screenHeight) {
-        if (center_line.segment_end.y > screenHeight) {
-            center_line.segment_end = .{ .x = cx, .y = screenHeight };
+    var segment_start = Vector2{ .x = cx, .y = 0.0 };
+    var segment_end = Vector2{ .x = cx, .y = dashLength };
+
+    while (segment_start.y < screenHeight) {
+        if (segment_end.y > screenHeight) {
+            segment_end.y = screenHeight;
         }
-        rl.drawLineEx(center_line.segment_start, center_line.segment_end, lineThickness, rl.Color.white);
+        rl.drawLineEx(segment_start, segment_end, lineThickness, rl.Color.white);
         const move_amount = dashLength + gapLength;
-        center_line.segment_start.y += move_amount;
-        center_line.segment_end.y += move_amount;
+        segment_start.y += move_amount;
+        segment_end.y += move_amount;
     }
 }
 
@@ -67,16 +60,15 @@ fn drawPlayer(player: Player) void {
     rl.drawRectangleV(player.pos, .{ .x = paddleWidth, .y = paddleHeight }, rl.Color.white);
 }
 
-fn drawScore() void {
-    // Player 1 score (left side)
-    const p1_score_text = std.fmt.allocPrintZ(std.heap.page_allocator, "{d}", .{game_state.player1.score}) catch unreachable;
-    defer std.heap.page_allocator.free(p1_score_text);
-    rl.drawText(p1_score_text, cx - 50, 20, 40, rl.Color.white);
+fn drawScoreValue(score: i32, x: i32) void {
+    var buffer: [16]u8 = undefined;
+    const score_text = std.fmt.bufPrintZ(&buffer, "{d}", .{score}) catch unreachable;
+    rl.drawText(score_text, x, scoreTextY, scoreFontSize, rl.Color.white);
+}
 
-    // Player 2 score (right side)
-    const p2_score_text = std.fmt.allocPrintZ(std.heap.page_allocator, "{d}", .{game_state.player2.score}) catch unreachable;
-    defer std.heap.page_allocator.free(p2_score_text);
-    rl.drawText(p2_score_text, cx + 30, 20, 40, rl.Color.white);
+fn drawScore() void {
+    drawScoreValue(game_state.player1.score, player1ScoreX);
+    drawScoreValue(game_state.player2.score, player2ScoreX);
 }
 
 fn resetBall() void {
